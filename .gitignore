@@ -1,0 +1,31 @@
+# Git Ignore File for Railora Project
+
+# Large Dataset Files (GitHub 100MB limit exceeded by combined_delay.csv)
+*.csv
+archive/*.csv
+Train_details_22122017.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.sqlite
+*.db
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+.npm/
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local Environment & Logs
+.env
+*.log

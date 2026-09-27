@@ -1,0 +1,6 @@
+# Frontend Git Ignore
+node_modules/
+dist/
+build/
+.env
+*.log

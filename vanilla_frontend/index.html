@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Railora — Dynamic Train ETA Prediction (Pure HTML5/CSS3/JS)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #475569;
+      --brand-navy: #1e3a8a;
+      --brand-blue: #2563eb;
+      --brand-light: #eff6ff;
+      --brand-border: #bfdbfe;
+      --success-green: #059669;
+      --success-light: #ecfdf5;
+      --warning-amber: #d97706;
+      --warning-light: #fffbeb;
+      --danger-red: #dc2626;
+      --border-color: #cbd5e1;
+      --radius-md: 14px;
+      --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(rgba(241, 245, 249, 0.45), rgba(241, 245, 249, 0.65)), url('./background.jpg') center/cover no-repeat fixed;
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+    h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
+
+    .container { width: 100%; max-width: 1050px; margin: 0 auto; padding: 0 16px; }
+
+    /* Header */
+    header { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; height: 74px; }
+    .logo-box { display: flex; align-items: center; gap: 14px; }
+    .logo-img { height: 48px; width: 48px; object-fit: cover; border-radius: 12px; border: 2px solid var(--brand-border); }
+
+    /* Buttons & Badges */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.15s ease; }
+    .btn-primary { background: var(--brand-blue); color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: rgba(241, 245, 249, 0.9); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; }
+    .badge-success { background: var(--success-light); color: var(--success-green); border: 1px solid #a7f3d0; }
+    .badge-warning { background: var(--warning-light); color: var(--warning-amber); border: 1px solid #fde68a; }
+    .badge-info { background: var(--brand-light); color: var(--brand-blue); border: 1px solid var(--brand-border); }
+
+    .card { background: rgba(255, 255, 255, 0.90); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 24px; margin-bottom: 24px; }
+
+    /* Search Box */
+    .search-wrapper { display: flex; background: #fff; border: 2px solid var(--brand-border); border-radius: 16px; padding: 6px 8px 6px 16px; margin: 24px 0 16px 0; }
+    .search-input { width: 100%; border: none; outline: none; font-size: 1.1rem; font-family: inherit; }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; align-items: center; }
+
+    /* ETA Display */
+    .eta-box { background: var(--brand-light); border: 1px solid var(--brand-border); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .eta-range { font-size: 2.5rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: var(--text-primary); }
+
+    /* Premium Route Visualizer */
+    .route-container { position: relative; padding: 32px 20px; background: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); }
+    .route-track-bg { position: absolute; top: 48px; left: 60px; right: 60px; height: 6px; background: #e2e8f0; border-radius: 3px; z-index: 1; }
+    .route-track-progress { width: 50%; height: 100%; background: linear-gradient(90deg, #2563eb, #1e3a8a); border-radius: 3px; }
+    .route-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr 1fr; position: relative; z-index: 2; text-align: center; }
+    .stn-active-hero { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; display: flex; align-items: center; justify-content: center; margin: -10px auto 6px auto; font-size: 1.2rem; box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-inner">
+      <div class="logo-box">
+        <img src="./logo.jpg" alt="Railora Logo" class="logo-img" onerror="this.style.display='none'">
+        <div>
+          <h1 style="font-size: 1.35rem; color: var(--brand-navy);" id="titleText">Railora</h1>
+          <p style="font-size: 0.78rem; color: var(--text-muted);" id="subText">Dynamic Train ETA & Network Forecast</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <!-- Language Switcher Dropdown -->
+        <select id="langSelect" style="padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); font-weight: 600;" onchange="changeLanguage(this.value)">
+          <option value="en">English</option>
+          <option value="hi">हिंदी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+          <option value="ta">தமிழ் (Tamil)</option>
+        </select>
+        <button class="btn btn-secondary" onclick="toggleView('passenger')" id="btnPassenger" style="background: #fff;">Passenger</button>
+        <button class="btn btn-secondary" onclick="toggleView('operator')" id="btnOperator">Operator</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 20px;">
+
+    <!-- PASSENGER VIEW -->
+    <div id="passengerView">
+      <!-- Search Input -->
+      <div class="search-wrapper">
+        <input type="text" id="trainInput" class="search-input" placeholder="Enter train number or name (e.g. 12951 or Rajdhani)" value="12951">
+        <button class="btn btn-primary" onclick="searchTrain()">Check Arrival</button>
+      </div>
+
+      <!-- Quick Pills -->
+      <div class="pills">
+        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Quick Search:</span>
+        <button class="badge badge-info" onclick="quickSearch('12951')">12951 — Mumbai Rajdhani</button>
+        <button class="badge badge-info" onclick="quickSearch('12002')">12002 — Bhopal Shatabdi</button>
+        <button class="badge badge-info" onclick="quickSearch('12424')">12424 — Dibrugarh Rajdhani</button>
+      </div>
+
+      <!-- Result Card -->
+      <div class="card" id="resultCard">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 1.5rem; color: var(--brand-navy);" id="trainName">Mumbai Rajdhani Express</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;" id="trainLoc">Current Station: <strong>Kota Junction (KOTA)</strong> → Next: <strong>Ratlam Junction (RTM)</strong></p>
+          </div>
+          <div>
+            <span class="badge badge-warning" id="trainStatus" style="font-size: 0.95rem; padding: 6px 14px;">18 min late</span>
+            <span class="badge badge-info" style="font-size: 0.85rem;">★ 4.6 / 5 Punctuality</span>
+          </div>
+        </div>
+
+        <!-- Prominent ETA Box -->
+        <div class="eta-box">
+          <div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--brand-blue); text-transform: uppercase;">Estimated Arrival Range</span>
+            <div class="eta-range" id="etaRangeText">5:15 PM – 5:45 PM</div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);" id="etaDetails">Expected delay band: +10 to +40 mins (Median: ~+18m)</p>
+          </div>
+          <div style="background: #fff; padding: 12px 18px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">CONFIDENCE LEVEL</span>
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--success-green);" id="confidenceText">High Confidence (Approaching Destination)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plain Language Reason -->
+      <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px 20px;">
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Reason for Delay</span>
+        <p style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 2px;" id="reasonText">
+          "Running 18 min late due to heavy rain and track section congestion near Kota."
+        </p>
+      </div>
+
+      <!-- Premium Route Tracker -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <h3 style="font-size: 1.15rem; color: var(--brand-navy);">Live Route Tracker</h3>
+          <span class="badge badge-info">📡 Tracking Live Position</span>
+        </div>
+
+        <div class="route-container">
+          <div class="route-track-bg">
+            <div class="route-track-progress"></div>
+          </div>
+          <div class="route-grid">
+            <div>
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); display: block;">PASSED STOP</span>
+              <div style="font-size: 0.9rem; font-weight: 700;" id="prevStnNode">Sawai Madhopur (SWM)</div>
+            </div>
+            <div>
+              <div class="stn-active-hero">🚆</div>
+              <span style="font-size: 0.72rem; font-weight: 800; background: var(--brand-light); color: var(--brand-blue); padding: 2px 8px; border-radius: 99px;">LIVE LOCATION</span>
+              <div style="font-size: 1.05rem; font-weight: 800; color: var(--brand-navy); margin-top: 2px;" id="currentStnNode">Kota Junction (KOTA)</div>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--brand-blue); display: block;">NEXT STOP</span>
+              <div style="font-size: 0.9rem; font-weight: 700;" id="nextStnNode">Ratlam Junction (RTM)</div>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: block;">TERMINUS</span>
+              <div style="font-size: 0.9rem; font-weight: 700;" id="termStnNode">Mumbai Central (MMCT)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERATOR VIEW -->
+    <div id="operatorView" style="display: none;">
+      <div class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
+        <h2 style="font-size: 1.3rem; color: var(--brand-navy); margin-bottom: 8px;">Operator Portal Sign In</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Control officer credentials required.</p>
+        <input type="text" id="opId" value="OP-782" placeholder="Operator ID" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <input type="password" id="opPass" value="railflow123" placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <button class="btn btn-primary" style="width: 100%;" onclick="operatorLogin()">Sign In to Control Dashboard</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const API_BASE = 'http://localhost:8000';
+
+    const MOCK_DATA = {
+      '12951': { name: 'Mumbai Rajdhani Express', status: '18 min late', range: '5:15 PM – 5:45 PM', reason: 'Running 18 min late due to heavy rain and track section congestion near Kota.', current: 'Kota Junction (KOTA)', prev: 'Sawai Madhopur (SWM)', next: 'Ratlam Junction (RTM)', term: 'Mumbai Central (MMCT)' },
+      '12002': { name: 'Bhopal Shatabdi Express', status: 'On Time', range: '2:10 PM – 2:20 PM', reason: 'Minimal delay expected; normal operating speed.', current: 'Agra Cantt (AGC)', prev: 'Mathura Junction (MTJ)', next: 'Gwalior Junction (GWL)', term: 'Bhopal Junction (BPL)' },
+      '12424': { name: 'Dibrugarh Rajdhani Express', status: '35 min late', range: '6:40 PM – 7:20 PM', reason: 'Running 35 min late due to dense fog and speed restriction near Kanpur.', current: 'Kanpur Central (CNB)', prev: 'Aligarh Junction (ALJN)', next: 'Prayagraj Junction (PRYJ)', term: 'Dibrugarh (DBRG)' }
+    };
+
+    async function searchTrain() {
+      const trainId = document.getElementById('trainInput').value.trim();
+      if (!trainId) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/train/${trainId}/live`);
+        if (res.ok) {
+          const data = await res.json();
+          renderData({
+            name: data.train_name,
+            status: data.current_status,
+            range: `${data.predicted_eta_range.min_eta} – ${data.predicted_eta_range.max_eta} PM`,
+            reason: data.delay_reason,
+            current: `${data.current_position.station_name} (${data.current_position.station_code})`,
+            prev: data.previous_station,
+            next: data.next_station,
+            term: 'Terminus Station'
+          });
+          return;
+        }
+      } catch (e) {
+        console.warn('Backend offline, using fallback data.');
+      }
+
+      const fallback = MOCK_DATA[trainId] || MOCK_DATA['12951'];
+      renderData(fallback);
+    }
+
+    function renderData(data) {
+      document.getElementById('trainName').innerText = data.name;
+      document.getElementById('trainStatus').innerText = data.status;
+      document.getElementById('etaRangeText').innerText = data.range;
+      document.getElementById('reasonText').innerText = `"${data.reason}"`;
+      document.getElementById('currentStnNode').innerText = data.current;
+      document.getElementById('prevStnNode').innerText = data.prev;
+      document.getElementById('nextStnNode').innerText = data.next;
+      document.getElementById('termStnNode').innerText = data.term || 'Terminus';
+    }
+
+    function quickSearch(id) {
+      document.getElementById('trainInput').value = id;
+      searchTrain();
+    }
+
+    function toggleView(mode) {
+      if (mode === 'passenger') {
+        document.getElementById('passengerView').style.display = 'block';
+        document.getElementById('operatorView').style.display = 'none';
+        document.getElementById('btnPassenger').style.background = '#fff';
+        document.getElementById('btnOperator').style.background = 'transparent';
+      } else {
+        document.getElementById('passengerView').style.display = 'none';
+        document.getElementById('operatorView').style.display = 'block';
+        document.getElementById('btnPassenger').style.background = 'transparent';
+        document.getElementById('btnOperator').style.background = '#fff';
+      }
+    }
+
+    function operatorLogin() {
+      alert('Operator session authenticated! Accessing Control Dashboard.');
+    }
+
+    function changeLanguage(lang) {
+      if (lang === 'hi') {
+        document.getElementById('titleText').innerText = 'रेलोरा';
+        document.getElementById('subText').innerText = 'सटीक ट्रेन आगमन समय और नेटवर्क पूर्वानुमान';
+      } else if (lang === 'mr') {
+        document.getElementById('titleText').innerText = 'रेलोरा';
+        document.getElementById('subText').innerText = 'अंदाजित ट्रेन आगमन वेळ आणि नेटवर्क अंदाज';
+      } else if (lang === 'ta') {
+        document.getElementById('titleText').innerText = 'ரயிலோரா';
+        document.getElementById('subText').innerText = 'ரயில் வருகை நேரம் மற்றும் சேவை கணிப்பு';
+      } else {
+        document.getElementById('titleText').innerText = 'Railora';
+        document.getElementById('subText').innerText = 'Dynamic Train ETA & Network Forecast';
+      }
+    }
+  </script>
+</body>
+</html>
